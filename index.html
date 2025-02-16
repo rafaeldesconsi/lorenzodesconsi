@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lorenzo Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #gameContainer {
+            position: relative;
+        }
+        canvas {
+            background: yellow;
+            display: none;
+        }
+        #startScreen, #stageScreen {
+            font-size: 36px;
+            position: absolute;
+            width: 100%;
+            text-align: center;
+        }
+        #nextStageButton {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="startScreen">
+            <h1 style='font-size: 28px;'>LORENZO GAME</h1>
+            <p style='font-size: 18px;'>Press Start Button</p>
+            <button id="startButton">Start Game</button>
+        </div>
+        <div id="stageScreen" style="display: none;">
+            <h1>STAGE CLEARED</h1>
+            <button id="nextStageButton">Next Stage</button>
+        <p style='font-size: 14px;'>Designed by Rafael Desconsi</p>
+        <p style='font-size: 14px;'>Designed by Rafael Desconsi</p>
+        </div>
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+    </div>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const startScreen = document.getElementById("startScreen");
+        const stageScreen = document.getElementById("stageScreen");
+        const startButton = document.getElementById("startButton");
+        const nextStageButton = document.getElementById("nextStageButton");
+        
+        let player = { x: 50, y: 180, width: 30, height: 30, speed: 5 };
+        let stars = [];
+        let score = 0;
+        let level = 1;
+        let isPaused = false;
+        
+        const moveSound = new Audio('https://www.myinstants.com/media/sounds/jump-sound-effect.mp3');
+        const collectSound = new Audio('https://www.myinstants.com/media/sounds/coin.mp3');
+        const startMusic = new Audio('https://www.myinstants.com/media/sounds/adventure-island-theme.mp3'); startMusic.loop = false;
+        const levelUpSound = new Audio('https://www.myinstants.com/media/sounds/level-up.mp3'); levelUpSound.loop = false;
+        
+        function createStar() {
+            return { x: canvas.width, y: Math.random() * (canvas.height - 20), width: 20, height: 20, speed: 2 + level };
+        }
+        
+        function update() {
+            if (isPaused) return;
+            
+            stars.forEach(star => star.x -= star.speed);
+            if (Math.random() < 0.02) {
+                stars.push(createStar());
+            }
+            stars = stars.filter(star => star.x > 0);
+            
+            stars.forEach(star => {
+                if (player.x < star.x + star.width && player.x + player.width > star.x && player.y < star.y + star.height && player.y + player.height > star.y) {
+                    score++;
+                    collectSound.play();
+                    stars.splice(stars.indexOf(star), 1);
+                    if (score % 10 === 0) {
+                        level++;
+                        levelUpSound.currentTime = 0;
+                        levelUpSound.play();
+                        isPaused = true;
+                        canvas.style.display = "none";
+                        stageScreen.style.display = "block";
+                        nextStageButton.style.display = "block";
+                    }
+                }
+            });
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(player.x + 15, player.y + 15, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(player.x + 10, player.y + 10, 3, 0, Math.PI * 2);
+            ctx.arc(player.x + 20, player.y + 10, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(player.x + 15, player.y + 25, 7, 0, Math.PI);
+            ctx.stroke();
+            
+            ctx.fillStyle = "darkblue";
+            stars.forEach(star => ctx.fillRect(star.x, star.y, star.width, star.height));
+            
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("Lorenzo Desconsi Game | Score: " + score + " | Level: " + level, 10, 20);
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        document.addEventListener("keydown", event => {
+            if (event.key === "ArrowUp" && player.y > 0) { player.y -= player.speed; moveSound.play(); }
+            if (event.key === "ArrowDown" && player.y < canvas.height - player.height) { player.y += player.speed; moveSound.play(); }
+        });
+        
+        startButton.addEventListener("click", () => {
+            startMusic.play().catch(error => console.log('Music autoplay blocked, user interaction required')); startMusic.currentTime = 0;
+            startMusic.currentTime = 0;
+            setTimeout(() => {
+                startScreen.style.display = "none";
+                canvas.style.display = "block";
+                gameLoop();
+            }, 3000);
+        });
+        
+        nextStageButton.addEventListener("click", () => {
+            stageScreen.style.display = "none";
+            canvas.style.display = "block";
+            isPaused = false;
+            gameLoop();
+        });
+    </script>
+</body>
+</html>
